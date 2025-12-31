@@ -65,6 +65,10 @@
             "👍": 0,
             "❤️": 0,
             "🎉": 0,
+            "😊": 0,
+            "😂": 0,
+            "😉": 0,
+            "😁": 0,
           },
         });
 
@@ -122,6 +126,18 @@
               }</span>
               <span style="margin-left:8px">🎉 ${
                 item.reactions?.["🎉"] || 0
+              }</span>
+              <span style="margin-left:8px">😁 ${
+                item.reactions?.["😁"] || 0
+              }</span>
+              <span style="margin-left:8px">😊 ${
+                item.reactions?.["😊"] || 0
+              }</span>
+              <span style="margin-left:8px">😂 ${
+                item.reactions?.["😂"] || 0
+              }</span>
+              <span style="margin-left:8px">😉 ${
+                item.reactions?.["😉"] || 0
               }</span>
             </div>
 
@@ -276,9 +292,20 @@ ${
         top: -10px;
         animation: fall linear forwards;
       }
+      .archa {
+        position: fixed;
+        top: -20px;
+        pointer-events: none;
+        animation: treeFall linear forwards;
+      }
       @keyframes fall {
         to {
           transform: translateY(110vh);
+        }
+      }
+      @keyframes treeFall {
+        to {
+          transform: translateY(110vh) rotate(360deg);
         }
       }
     </style>
@@ -350,13 +377,30 @@ ${
         const s = document.createElement("div");
         s.textContent = "❄";
         s.className = "snowflake";
-        s.style.left = Math.random() * 100 + "vw";
+        s.style.left = Math.random() * 200 + "vw";
         s.style.fontSize = Math.random() * 20 + 10 + "px";
-        const d = Math.random() * 3 + 3;
+        const d = Math.random() * 5 + 5;
         s.style.animationDuration = d + "s";
         document.body.appendChild(s);
         setTimeout(() => s.remove(), d * 1000);
       }
+      setInterval(snow, 150);
+      // Archa
+      function archa() {
+        const c = document.createElement("div");
+        c.textContent = "☃️";
+        c.className = "archa";
+        // place somewhere across the viewport width
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.fontSize = Math.random() * 1.5 + 0.8 + "rem";
+        const b = Math.random() * 5 + 5; // duration in seconds
+        c.style.animationDuration = b + "s";
+        document.body.appendChild(c);
+        // remove when animation is done
+        setTimeout(() => c.remove(), b * 1000);
+      }
+      // start the tree/archa generator separately from snow
+      setInterval(archa, 900);
       setInterval(snow, 150);
     </script>
   </body>
