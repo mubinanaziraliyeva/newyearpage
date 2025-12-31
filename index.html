@@ -14,6 +14,7 @@
         push,
         onValue,
       } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+      // Firebase Storage removed (file uploads disabled)
 
       const firebaseConfig = {
         apiKey: "AIzaSyDWRzrAEGp8562_DXJAL7PQRwls2IBOGHA",
@@ -27,8 +28,19 @@
       const app = initializeApp(firebaseConfig);
       const database = getDatabase(app);
       const tabriklarRef = ref(database, "tabriklar");
+      const ADMIN_SECRET = "2026admin";
+      const SITE_PASSWORD = "2026password";
 
       window.submitTabrik = function () {
+        // Ensure user unlocked the site with site password first
+        if (!window.siteUnlocked) {
+          alert(
+            "Iltimos avval kirish parolini kiriting va 'Kirish' tugmasini bosing."
+          );
+          return;
+        }
+
+        // Admin paroli
         const name = document.getElementById("nameInput").value.trim();
         const msg = document.getElementById("msgInput").value.trim();
 
@@ -44,13 +56,43 @@
           minute: "2-digit",
         });
 
-        push(tabriklarRef, { name, msg, time });
+        // push message (attachments disabled)
+        push(tabriklarRef, {
+          name,
+          msg,
+          time,
+          reactions: {
+            "👍": 0,
+            "❤️": 0,
+            "🎉": 0,
+          },
+        });
 
         document.getElementById("nameInput").value = "";
         document.getElementById("msgInput").value = "";
 
         document.body.style.backgroundColor = "white";
         setTimeout(() => (document.body.style.backgroundColor = ""), 120);
+      };
+
+      // Check site password and reveal the form/messages
+      window.checkSitePassword = function () {
+        const entered = document.getElementById("sitepassword").value;
+        if (!entered) {
+          alert("Parolni kiriting");
+          return;
+        }
+        if (entered !== SITE_PASSWORD) {
+          alert("Parol noto‘g‘ri");
+          return;
+        }
+
+        // Reveal protected inputs and messages
+        window.siteUnlocked = true;
+        document
+          .querySelectorAll(".protected")
+          .forEach((el) => (el.style.display = "block"));
+        document.getElementById("displayList").style.display = "block";
       };
 
       onValue(tabriklarRef, (snapshot) => {
@@ -60,18 +102,110 @@
 
         if (!data) return;
 
-        Object.values(data)
+        Object.entries(data)
           .reverse()
-          .forEach((item) => {
+          .forEach(([key, item]) => {
+            const isAdmin =
+              document.getElementById("adminCode")?.value === ADMIN_SECRET;
+
+            // attachments feature removed
+
             list.innerHTML += `
-              <div class="tabrik-box">
-                <span class="timestamp">${item.time}</span>
-                <strong style="color:#ffc300">👤 ${item.name}</strong>
-                <div>${item.msg}</div>
-              </div>
-            `;
+          <div class="tabrik-box">
+            <span class="timestamp">${item.time}</span>
+            <strong style="color:#ffc300">👤 ${item.name}</strong>
+            <div>${item.msg}</div>
+            <div class="react-display">
+              <span>👍 ${item.reactions?.["👍"] || 0}</span>
+              <span style="margin-left:8px">❤️ ${
+                item.reactions?.["❤️"] || 0
+              }</span>
+              <span style="margin-left:8px">🎉 ${
+                item.reactions?.["🎉"] || 0
+              }</span>
+            </div>
+
+<button onclick="showReply('${key}')">💬 Javob</button>
+
+<div id="reply-${key}" style="display:none">
+  <input id="rname-${key}" placeholder="Ism">
+  <input id="rmsg-${key}" placeholder="Javob">
+  <button onclick="sendReply('${key}')">Yuborish</button>
+</div>
+${
+  item.replies
+    ? Object.values(item.replies)
+        .map(
+          (r) => `
+  <div style="margin-left:15px">
+    ↪ <b>${r.name}</b>: ${r.msg}
+  </div>
+`
+        )
+        .join("")
+    : ""
+}
+
+        ${
+          isAdmin
+            ? `<button onclick="deleteMsg('${key}')" style="margin-top:8px">🗑 O‘chirish</button>`
+            : ""
+        }
+      </div>
+    `;
           });
       });
+      import { remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+      window.deleteMsg = function (key) {
+        if (!confirm("O‘chirilsinmi?")) return;
+        remove(ref(database, "tabriklar/" + key));
+      };
+      // Reaksiya funksiyasi
+      import { update } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+      window.react = function (key, emoji) {
+        const localKey = "reacted_" + key;
+        // prevent multiple reactions from the same browser
+        if (localStorage.getItem(localKey)) {
+          alert("Siz bu xabarga allaqachon reaksiya bildirdingiz");
+          return;
+        }
+
+        const emojiRef = ref(database, `tabriklar/${key}/reactions/${emoji}`);
+        onValue(
+          emojiRef,
+          (snap) => {
+            update(ref(database, `tabriklar/${key}/reactions`), {
+              [emoji]: (snap.val() || 0) + 1,
+            });
+            // remember locally that this client reacted to this message
+            try {
+              localStorage.setItem(localKey, emoji);
+            } catch (e) {
+              console.warn("localStorage set failed", e);
+            }
+          },
+          { onlyOnce: true }
+        );
+      };
+      // Reply funksiyasi
+      window.showReply = function (key) {
+        document.getElementById(`reply-${key}`).style.display = "block";
+      };
+
+      window.sendReply = function (key) {
+        const name = document.getElementById(`rname-${key}`).value;
+        const msg = document.getElementById(`rmsg-${key}`).value;
+        if (!name || !msg) return;
+
+        const time = new Date().toLocaleTimeString("uz-UZ", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        push(ref(database, `tabriklar/${key}/replies`), { name, msg, time });
+      };
     </script>
 
     <style>
@@ -112,6 +246,17 @@
         font-weight: bold;
         cursor: pointer;
       }
+      /* Reaction buttons should have transparent background */
+      .tabrik-box button.react-btn {
+        background: transparent;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        font-size: 1rem;
+        margin-right: 6px;
+      }
+      /* Sticker UI */
+      /* Sticker UI removed */
       .tabrik-box {
         background: rgba(255, 255, 255, 0.08);
         padding: 15px;
@@ -120,6 +265,7 @@
         text-align: left;
         border-left: 5px solid #ffc300;
       }
+      /* attachment UI removed */
       .timestamp {
         font-size: 0.7rem;
         opacity: 0.6;
@@ -143,19 +289,63 @@
       <h1>❄️ 2026 Yangi Yil Tabriklari</h1>
 
       <div class="glass-card">
-        <input id="nameInput" placeholder="Ismingiz" />
+        <div style="display: flex; gap: 8px; align-items: center">
+          <input
+            type="password"
+            id="sitepassword"
+            placeholder="Kirish paroli"
+          />
+          <button
+            class="main-btn"
+            style="width: auto; padding: 10px 14px"
+            onclick="checkSitePassword()"
+          >
+            Kirish
+          </button>
+        </div>
+
+        <!-- showSitePass removed -->
+
+        <!-- These are hidden until correct site password entered -->
+        <input
+          id="nameInput"
+          class="protected"
+          placeholder="Ismingiz"
+          style="display: none"
+        />
         <textarea
           id="msgInput"
+          class="protected"
           rows="3"
           placeholder="Tabrik yozing..."
+          style="display: none"
         ></textarea>
-        <button class="main-btn" onclick="submitTabrik()">Yuborish</button>
+        <!-- file upload removed -->
+        <input
+          id="adminCode"
+          class="protected"
+          placeholder="Admin kod"
+          type="password"
+          style="display: none"
+        />
+
+        <button
+          class="main-btn protected"
+          style="display: none"
+          onclick="submitTabrik()"
+        >
+          Yuborish
+        </button>
       </div>
 
-      <div id="displayList" style="padding-bottom: 50px"></div>
+      <div id="displayList" style="padding-bottom: 50px; display: none"></div>
     </div>
 
     <script>
+      // file upload handlers removed
+
+      // debug upload helpers removed
+
       function snow() {
         const s = document.createElement("div");
         s.textContent = "❄";
