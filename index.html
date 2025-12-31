@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yangi Yil 2026 - Global Tabriklar</title>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        push,
+        onValue,
+      } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+      // DIQQAT: Bu yerga Firebase'dan olgan o'z kodingizni qo'ying!
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "firebase/app";
+      import { getAnalytics } from "firebase/analytics";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyDWRzrAEGp8562_DXJAL7PQRwls2IBOGHA",
+        authDomain: "yaniyil2026.firebaseapp.com",
+        projectId: "yaniyil2026",
+        storageBucket: "yaniyil2026.firebasestorage.app",
+        messagingSenderId: "989025178210",
+        appId: "1:989025178210:web:9dc0301f9d368ce2b2b73b",
+        measurementId: "G-T5C4TM6NQ7",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+
+      // Tabrikni yuborish funksiyasi
+      window.submitTabrik = function () {
+        const name = document.getElementById("nameInput").value;
+        const msg = document.getElementById("msgInput").value;
+        const time = new Date().toLocaleString("uz-UZ", {
+          hour: "2-digit",
+          minute: "2-digit",
+          day: "2-digit",
+          month: "short",
+        });
+
+        if (!name || !msg) return alert("To'ldiring!");
+
+        push(tabriklarRef, { name, msg, time });
+
+        // Miltillash effekti
+        document.body.style.backgroundColor = "white";
+        setTimeout(() => {
+          document.body.style.backgroundColor = "";
+        }, 150);
+
+        document.getElementById("nameInput").value = "";
+        document.getElementById("msgInput").value = "";
+      };
+
+      // Ma'lumotlarni bazadan real vaqtda olish
+      onValue(tabriklarRef, (snapshot) => {
+        const data = snapshot.val();
+        const listArea = document.getElementById("displayList");
+        listArea.innerHTML = "";
+
+        if (data) {
+          Object.values(data)
+            .reverse()
+            .forEach((item) => {
+              listArea.innerHTML += `
+                      <div class="tabrik-box">
+                          <span class="timestamp">${item.time}</span>
+                          <strong style="color: #ffc300; display: block;">👤 ${item.name}</strong>
+                          <div>${item.msg}</div>
+                      </div>
+                  `;
+            });
+        }
+      });
+    </script>
+
+    <style>
+      /* Avvalgi barcha CSS stillari shu yerda qoladi */
+      body {
+        margin: 0;
+        background: linear-gradient(to bottom, #001d3d, #000814);
+        color: white;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      .container {
+        z-index: 10;
+        width: 90%;
+        max-width: 600px;
+        text-align: center;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 25px;
+        border-radius: 20px;
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 10px;
+        border: none;
+        box-sizing: border-box;
+      }
+      .emoji-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin: 2px;
+      }
+      .main-btn {
+        background: linear-gradient(45deg, #00b4d8, #0077b6);
+        color: white;
+        border: none;
+        padding: 15px;
+        border-radius: 30px;
+        width: 100%;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .tabrik-box {
+        background: rgba(255, 255, 255, 0.08);
+        padding: 15px;
+        border-radius: 15px;
+        margin-top: 15px;
+        border-left: 5px solid #ffc300;
+        position: relative;
+        animation: slideIn 0.5s ease-out;
+        text-align: left;
+      }
+      .timestamp {
+        font-size: 0.7rem;
+        opacity: 0.5;
+        position: absolute;
+        right: 10px;
+        top: 10px;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-50px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      .snowflake {
+        position: fixed;
+        top: -10px;
+        color: white;
+        z-index: 1;
+        animation: fall linear forwards;
+      }
+      @keyframes fall {
+        to {
+          transform: translateY(105vh) rotate(360deg);
+        }
+      }
+      .countdown {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin: 20px 0;
+      }
+      .time-box span {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #ffc300;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>❄️ 2026-yil Countdown</h1>
+      <div class="countdown" id="timer">
+        <div class="time-box"><span id="days">00</span><label>Kun</label></div>
+        <div class="time-box">
+          <span id="hours">00</span><label>Soat</label>
+        </div>
+        <div class="time-box"><span id="mins">00</span><label>Min</label></div>
+        <div class="time-box"><span id="secs">00</span><label>Sek</label></div>
+      </div>
+      <div class="glass-card">
+        <input type="text" id="nameInput" placeholder="Ismingiz..." />
+        <div class="emoji-bar">
+          <button onclick="addEmoji('🎄')">🎄</button
+          ><button onclick="addEmoji('🎅')">🎅</button
+          ><button onclick="addEmoji('🎁')">🎁</button>
+        </div>
+        <textarea id="msgInput" rows="3" placeholder="Tabrik..."></textarea>
+        <button class="main-btn" onclick="submitTabrik()">Yuborish</button>
+      </div>
+      <div id="displayList" style="padding-bottom: 50px"></div>
+    </div>
+
+    <script>
+      // Qor va Countdown funksiyalari (avvalgi koddan)
+      function createSnow() {
+        const snow = document.createElement("div");
+        snow.innerHTML = "❄";
+        snow.className = "snowflake";
+        snow.style.left = Math.random() * 100 + "vw";
+        snow.style.fontSize = Math.random() * 15 + 10 + "px";
+        const duration = Math.random() * 3 + 3;
+        snow.style.animationDuration = duration + "s";
+        document.body.appendChild(snow);
+        setTimeout(() => snow.remove(), duration * 1000);
+      }
+      setInterval(createSnow, 150);
+
+      function countdown() {
+        const target = new Date("January 1, 2026 00:00:00").getTime();
+        const now = new Date().getTime();
+        const gap = target - now;
+        const second = 1000,
+          minute = second * 60,
+          hour = minute * 60,
+          day = hour * 24;
+        document.getElementById("days").innerText = Math.floor(gap / day);
+        document.getElementById("hours").innerText = Math.floor(
+          (gap % day) / hour
+        );
+        document.getElementById("mins").innerText = Math.floor(
+          (gap % hour) / minute
+        );
+        document.getElementById("secs").innerText = Math.floor(
+          (gap % minute) / second
+        );
+      }
+      setInterval(countdown, 1000);
+      function addEmoji(e) {
+        document.getElementById("msgInput").value += e;
+      }
+    </script>
+  </body>
+</html>
